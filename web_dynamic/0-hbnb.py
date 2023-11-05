@@ -12,6 +12,8 @@ app = Flask(__name__)
 # app.jinja_env.trim_blocks = True
 # app.jinja_env.lstrip_blocks = True
 
+def sort_by_name(obj):
+    return obj.name
 
 @app.teardown_appcontext
 def close_db(error):
@@ -22,26 +24,24 @@ def close_db(error):
 @app.route('/0-hbnb', strict_slashes=False)
 def hbnb():
     """ HBNB is alive! """
-    states = storage.all(State).values()
-    states = sorted(states, key=lambda k: k.name)
-    st_ct = []
+    states_obj = sorted(storage.all(State).values(), key=sort_by_name)
+    state_city_obj = []
+    for state in states_obj:
+        cities = sorted(state.cities, key=sort_by_name)
+        state_city_obj.append([state, cities])
+    amenities = sorted(storage.all(Amenity).values(), key=sort_by_name)
+    places = sorted(storage.all(Place).values(), key=sort_by_name)
+    users = dict([user.id, "{} {}".format(user.first_name, user.last_name)]
+                 for user in storage.all('User').values())
 
-    for state in states:
-        st_ct.append([state, sorted(state.cities, key=lambda k: k.name)])
-
-    amenities = storage.all(Amenity).values()
-    amenities = sorted(amenities, key=lambda k: k.name)
-
-    places = storage.all(Place).values()
-    places = sorted(places, key=lambda k: k.name)
-
-    return render_template('0-hbnb.html',
-                           states=st_ct,
-                           amenities=amenities,
-                           places=places,
+    return render_template('0-hbnb.html', states=state_city_obj,
+                           amenities=amenities, places=places, users=users,
                            cache_id=uuid.uuid4())
+
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=5000, debug=True)
 
 
 if __name__ == "__main__":
     """ Main Function """
-    app.run(host='0.0.0.0', port=5001)
+    app.run(host='0.0.0.0', port=5000)
